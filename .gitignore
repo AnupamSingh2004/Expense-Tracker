@@ -1,0 +1,12 @@
+backend/vendor/
+*.out
+*.test
+
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+.env
+.env.local
+*.local
+*.log
