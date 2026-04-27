@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/fenmo/expense-tracker/internal/middleware"
 	"github.com/fenmo/expense-tracker/internal/model"
 	"github.com/fenmo/expense-tracker/internal/service"
 	"go.uber.org/zap"
@@ -24,6 +25,7 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errResponse{Code: "INVALID_JSON", Message: "request body must be valid JSON"})
 		return
 	}
+	input.UserID = middleware.UserIDFromCtx(r.Context())
 
 	idempKey := r.Header.Get("Idempotency-Key")
 	expense, cached, err := h.svc.CreateExpense(r.Context(), idempKey, input)
@@ -41,7 +43,9 @@ func (h *ExpenseHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *ExpenseHandler) List(w http.ResponseWriter, r *http.Request) {
 	filter := model.ListExpensesFilter{
+		UserID:   middleware.UserIDFromCtx(r.Context()),
 		Category: r.URL.Query().Get("category"),
+		SortBy:   r.URL.Query().Get("sort"),
 	}
 	expenses, err := h.svc.ListExpenses(r.Context(), filter)
 	if err != nil {

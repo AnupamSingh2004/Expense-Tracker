@@ -18,6 +18,7 @@ import (
 	"github.com/fenmo/expense-tracker/internal/service"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	migrate "github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -44,19 +45,37 @@ func main() {
 	}
 	defer pool.Close()
 
+	userRepo := repository.NewUserRepository(pool)
+	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret)
+	authHandler := handler.NewAuthHandler(authSvc, logger)
+
 	expRepo := repository.NewExpenseRepository(pool)
 	idempRepo := repository.NewIdempotencyRepository(pool)
 	expSvc := service.NewExpenseService(expRepo, idempRepo, logger)
 	expHandler := handler.NewExpenseHandler(expSvc, logger)
 
 	r := chi.NewRouter()
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{cfg.AllowedOrigins},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Idempotency-Key", "X-Request-ID"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger(logger))
 	r.Use(middleware.Timeout(10 * time.Second))
 	r.Use(chimw.Recoverer)
 
 	r.Get("/health", handler.Health)
+
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", authHandler.Register)
+		r.Post("/login", authHandler.Login)
+	})
+
 	r.Route("/expenses", func(r chi.Router) {
+		r.Use(middleware.Authenticate(authSvc))
 		r.Post("/", expHandler.Create)
 		r.Get("/", expHandler.List)
 	})

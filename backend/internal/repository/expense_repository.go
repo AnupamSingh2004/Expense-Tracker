@@ -26,12 +26,12 @@ func (r *pgExpenseRepo) Create(ctx context.Context, e *model.Expense) (*model.Ex
 	e.CreatedAt = time.Now().UTC()
 
 	const q = `
-		INSERT INTO expenses (id, amount, category, description, date, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO expenses (id, user_id, amount, category, description, date, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, amount, category, description, date, created_at`
 
 	out := &model.Expense{}
-	err := r.pool.QueryRow(ctx, q, e.ID, e.Amount, e.Category, e.Description, e.Date, e.CreatedAt).
+	err := r.pool.QueryRow(ctx, q, e.ID, e.UserID, e.Amount, e.Category, e.Description, e.Date, e.CreatedAt).
 		Scan(&out.ID, &out.Amount, &out.Category, &out.Description, &out.Date, &out.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("expense create: %w", err)
@@ -40,19 +40,22 @@ func (r *pgExpenseRepo) Create(ctx context.Context, e *model.Expense) (*model.Ex
 }
 
 func (r *pgExpenseRepo) List(ctx context.Context, f model.ListExpensesFilter) ([]*model.Expense, error) {
-	var (
-		args  []any
-		where string
-	)
+	args := []any{f.UserID}
+	where := "WHERE user_id = $1"
+
 	if f.Category != "" {
 		args = append(args, f.Category)
-		where = "WHERE category = $1"
+		where += fmt.Sprintf(" AND category = $%d", len(args))
 	}
 
+	order := "DESC"
+	if f.SortBy == "date_asc" {
+		order = "ASC"
+	}
 	q := fmt.Sprintf(`
 		SELECT id, amount, category, description, date, created_at
 		FROM expenses %s
-		ORDER BY date DESC, created_at DESC`, where)
+		ORDER BY date %s, created_at %s`, where, order, order)
 
 	rows, err := r.pool.Query(ctx, q, args...)
 	if err != nil {

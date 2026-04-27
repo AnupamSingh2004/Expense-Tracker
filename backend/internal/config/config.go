@@ -16,6 +16,8 @@ type Config struct {
 	ServerPort     int
 	LogLevel       string
 	MigrationsPath string
+	AllowedOrigins string
+	JWTSecret      string
 }
 
 func Load() (*Config, error) {
@@ -37,6 +39,8 @@ func Load() (*Config, error) {
 		ServerPort:     srvPort,
 		LogLevel:       getEnv("LOG_LEVEL", "info"),
 		MigrationsPath: getEnv("MIGRATIONS_PATH", "./internal/migrations"),
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "*"),
+		JWTSecret:      getEnv("JWT_SECRET", "change-me-in-production"),
 	}, nil
 }
 

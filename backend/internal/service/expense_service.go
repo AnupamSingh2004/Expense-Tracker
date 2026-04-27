@@ -68,6 +68,7 @@ func (s *expenseService) CreateExpense(
 	}
 
 	created, err := s.expRepo.Create(ctx, &model.Expense{
+		UserID:      input.UserID,
 		Amount:      input.Amount,
 		Category:    input.Category,
 		Description: input.Description,
