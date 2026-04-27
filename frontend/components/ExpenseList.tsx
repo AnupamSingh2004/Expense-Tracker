@@ -68,10 +68,11 @@ export function ExpenseList() {
               {expenses.map((e) => (
                 <tr key={e.id} className="hover:bg-indigo-50/40 transition-colors duration-150 group">
                   <td className="py-4 px-5 text-slate-600 whitespace-nowrap font-medium">
-                    {new Date(e.date).toLocaleDateString('en-US', {
+                    {new Date(e.date).toLocaleDateString('en-IN', {
                       year: 'numeric',
                       month: 'short',
-                      day: 'numeric'
+                      day: 'numeric',
+                      timeZone: 'UTC',
                     })}
                   </td>
                   <td className="py-4 px-5">
