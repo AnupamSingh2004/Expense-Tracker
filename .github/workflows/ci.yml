@@ -15,7 +15,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.25'
           cache-dependency-path: backend/go.sum
 
       - name: Build
@@ -32,11 +32,12 @@ jobs:
         env:
           TESTCONTAINERS_RYUK_DISABLED: "true"
 
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+
       - name: Lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          working-directory: backend
-          version: latest
+        working-directory: backend
+        run: golangci-lint run
 
   frontend:
     name: Frontend (Next.js)
