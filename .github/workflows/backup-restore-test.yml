@@ -1,0 +1,88 @@
+name: Backup Restore Test
+
+on:
+  schedule:
+    # Run every Sunday at 03:00 UTC
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+jobs:
+  test-restore:
+    name: Test backup and restore
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: expenses_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install postgres client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Apply migrations
+        env:
+          PGPASSWORD: secret
+        run: |
+          for f in backend/internal/migrations/*.up.sql; do
+            psql -h localhost -U postgres -d expenses_test -f "$f"
+          done
+
+      - name: Seed sample data
+        env:
+          PGPASSWORD: secret
+        run: |
+          psql -h localhost -U postgres -d expenses_test <<'SQL'
+            INSERT INTO users (id, email, password_hash)
+            VALUES (gen_random_uuid(), 'test@example.com', 'hash');
+            INSERT INTO expenses (id, user_id, amount, category, description, date)
+            SELECT gen_random_uuid(), id, 10000, 'food', 'lunch', NOW()
+            FROM users LIMIT 1;
+          SQL
+
+      - name: Run backup
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGDATABASE: expenses_test
+          PGUSER: postgres
+          PGPASSWORD: secret
+          BACKUP_DIR: /tmp/backups
+          BACKUP_RETAIN_DAYS: 7
+        run: |
+          chmod +x scripts/backup.sh
+          scripts/backup.sh
+          ls -lh /tmp/backups/
+
+      - name: Restore backup and verify
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGDATABASE: expenses_test
+          PGUSER: postgres
+          PGPASSWORD: secret
+        run: |
+          chmod +x scripts/restore.sh
+          BACKUP_FILE=$(ls /tmp/backups/*.sql.gz | head -1)
+          echo "Restoring: $BACKUP_FILE"
+          scripts/restore.sh "$BACKUP_FILE"
+
+          COUNT=$(psql -h localhost -U postgres -d expenses_test -tAc "SELECT COUNT(*) FROM expenses;")
+          echo "Expense rows after restore: $COUNT"
+          if [ "$COUNT" -lt 1 ]; then
+            echo "Restore verification FAILED — expected at least 1 expense row" >&2
+            exit 1
+          fi
+          echo "Restore verification PASSED"
