@@ -1,23 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated, clearToken } from '@/lib/auth';
-import { LoadingSpinner } from './LoadingSpinner';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
+  // localStorage is only available on the client; this component is always client-side
+  const authed = typeof window !== 'undefined' && isAuthenticated();
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    if (!authed) {
       router.replace('/login');
-    } else {
-      setChecking(false);
     }
-  }, [router]);
+  }, [authed, router]);
 
-  if (checking) return <LoadingSpinner />;
+  // Don't render children until we've confirmed authentication client-side
+  if (!authed) return null;
   return <>{children}</>;
 }
 
