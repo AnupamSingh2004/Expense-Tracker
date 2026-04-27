@@ -10,10 +10,11 @@ import { ErrorBanner } from './ErrorBanner';
 
 export function ExpenseList() {
   const [category, setCategory] = useState('');
+  const [sort, setSort] = useState<'date_desc' | 'date_asc'>('date_desc');
 
   const { data: expenses = [], isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['expenses', category],
-    queryFn: () => listExpenses(category || undefined),
+    queryKey: ['expenses', category, sort],
+    queryFn: () => listExpenses(category || undefined, sort),
   });
 
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -22,7 +23,15 @@ export function ExpenseList() {
     <div className="bg-white rounded-xl shadow p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-lg font-semibold text-gray-800">Expenses</h2>
-        <FilterBar category={category} onCategoryChange={setCategory} />
+        <div className="flex items-center gap-3 flex-wrap">
+          <FilterBar category={category} onCategoryChange={setCategory} />
+          <button
+            onClick={() => setSort((s) => (s === 'date_desc' ? 'date_asc' : 'date_desc'))}
+            className="flex items-center gap-1 text-sm border rounded-md px-3 py-1.5 hover:bg-gray-50 transition-colors"
+          >
+            Date {sort === 'date_desc' ? '↓' : '↑'}
+          </button>
+        </div>
       </div>
 
       {isLoading && <LoadingSpinner />}
