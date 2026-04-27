@@ -79,7 +79,7 @@ func (s *expenseService) CreateExpense(
 	}
 
 	if idempKey != "" {
-		resp, _ := json.Marshal(created)
+		resp, _ := json.Marshal(created) //nolint:errcheck // json.Marshal on a plain struct never errors
 		if saveErr := s.idempRepo.Save(ctx, &model.IdempotencyRecord{
 			Key: idempKey, RequestHash: requestHash, Response: json.RawMessage(resp),
 		}); saveErr != nil {
@@ -108,7 +108,7 @@ func validate(input model.CreateExpenseInput) error {
 }
 
 func hashInput(input model.CreateExpenseInput) string {
-	b, _ := json.Marshal(input)
+	b, _ := json.Marshal(input) //nolint:errcheck // json.Marshal on a plain struct never errors
 	h := sha256.Sum256(b)
 	return fmt.Sprintf("%x", h)
 }

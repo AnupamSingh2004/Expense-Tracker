@@ -23,9 +23,13 @@ func (m *mockExpRepo) List(_ context.Context, _ model.ListExpensesFilter) ([]*mo
 	return m.items, nil
 }
 
-type mockIdempRepo struct{ store map[string]*model.IdempotencyRecord }
+type mockIdempRepo struct {
+	store map[string]*model.IdempotencyRecord
+}
 
-func newMockIdemp() *mockIdempRepo { return &mockIdempRepo{store: map[string]*model.IdempotencyRecord{}} }
+func newMockIdemp() *mockIdempRepo {
+	return &mockIdempRepo{store: map[string]*model.IdempotencyRecord{}}
+}
 func (m *mockIdempRepo) Get(_ context.Context, key string) (*model.IdempotencyRecord, error) {
 	return m.store[key], nil
 }

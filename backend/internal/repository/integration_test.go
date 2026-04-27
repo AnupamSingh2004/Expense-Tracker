@@ -102,11 +102,11 @@ func TestExpenseRepo_CreateAndList(t *testing.T) {
 	ctx := context.Background()
 
 	created, err := repo.Create(ctx, &model.Expense{
-		UserID:   userID,
-		Amount:   5000,
-		Category: "food",
+		UserID:      userID,
+		Amount:      5000,
+		Category:    "food",
 		Description: "lunch",
-		Date:     time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
+		Date:        time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
 	})
 	if err != nil {
 		t.Fatalf("create: %v", err)

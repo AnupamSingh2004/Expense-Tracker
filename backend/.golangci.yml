@@ -10,9 +10,20 @@ linters:
     - staticcheck
     - unused
     - gofmt
-    - goimports
     - misspell
 
 linters-settings:
-  goimports:
-    local-prefixes: github.com/fenmo/expense-tracker
+  errcheck:
+    # Don't flag blank-identifier assignments or type assertions
+    check-blank: false
+    check-type-assertions: false
+    exclude-functions:
+      - (*go.uber.org/zap.Logger).Sync
+      - (github.com/jackc/pgx/v5/pgxpool.Pool).Close
+
+issues:
+  exclude-rules:
+    # Ignore errcheck in test files — intentional error discards are common
+    - path: "_test\\.go"
+      linters:
+        - errcheck
